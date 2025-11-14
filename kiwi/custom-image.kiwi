@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (c) 2025 Darren Soothill -->
+<image schemaversion="7.6" name="custom-opensuse">
+  <description type="system">
+    <author>Custom KIWI Builder</author>
+    <contact>ops@example.com</contact>
+    <specification>openSUSE based custom ISO with first boot automation.</specification>
+  </description>
+
+  <preferences>
+    <type image="oem" filesystem="btrfs" boot="isoboot" firmware="efi,legacy" hybrid="true" kernelcmdline="console=ttyS0"/>
+    <version>1.0.0</version>
+    <rpm-check-signatures>false</rpm-check-signatures>
+    <locale>en_US</locale>
+  </preferences>
+
+  <repository type="rpm-md">
+    <source path="https://download.opensuse.org/distribution/leap/15.5/repo/oss/"/>
+  </repository>
+  <repository type="rpm-md">
+    <source path="https://download.opensuse.org/update/leap/15.5/oss/"/>
+  </repository>
+
+  <packages type="bootstrap">
+    <package name="filesystem"/>
+    <package name="glibc"/>
+    <package name="libgcc_s1"/>
+    <package name="libstdc++6"/>
+    <package name="bash"/>
+  </packages>
+
+  <packages type="image">
+    <package name="patterns-base-base"/>
+    <package name="patterns-base-minimal_base"/>
+    <package name="python311"/>
+    <package name="curl"/>
+    <package name="wget"/>
+    <package name="sudo"/>
+    <package name="git"/>
+    <package name="wicked"/>
+    <package name="NetworkManager"/>
+    <package name="openssh"/>
+    <package name="ca-certificates"/>
+    <package name="timezone"/>
+  </packages>
+
+  <scripts>
+    <script name="config.sh" stage="config"/>
+  </scripts>
+</image>
