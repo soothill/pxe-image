@@ -4,6 +4,9 @@ SHELL := /bin/bash
 
 BIN := ./bin/build-image
 CONFIG_RENDER := ./bin/render-simple-config
+SHELL := /bin/bash
+
+BIN := ./bin/build-image
 KIWI := kiwi-ng
 CONFIG ?= config/sample-config.json
 DESCRIPTION ?= kiwi
@@ -19,6 +22,10 @@ OUTPUT_CONFIG ?= config/generated-config.json
 EXTRA_ARG_OPTION = $(strip $(if $(EXTRA_KIWI_ARGS),--extra-kiwi-args -- $(EXTRA_KIWI_ARGS),))
 
 .PHONY: help config-json download build clean
+
+EXTRA_ARG_OPTION = $(strip $(if $(EXTRA_KIWI_ARGS),--extra-kiwi-args -- $(EXTRA_KIWI_ARGS),))
+
+.PHONY: help download build clean
 
 help:
 	@echo "Make targets for the KIWI image workflow"

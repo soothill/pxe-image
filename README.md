@@ -20,6 +20,10 @@ custom openSUSE-based ISO image. The resulting image:
 ├── kiwi/                   # KIWI description, scripts and baked-in assets
 │   └── root/               # Files copied into the image filesystem
 └── pxe_image/              # Python package shared by the CLI utilities
+├── bin/                    # Entry-point CLI used to orchestrate builds
+├── config/                 # Example configuration files
+├── kiwi/                   # KIWI description, scripts and baked-in assets
+│   └── root/               # Files copied into the image filesystem
 └── README.md
 ```
 
