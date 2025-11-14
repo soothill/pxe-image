@@ -1,0 +1,19 @@
+# Copyright (c) 2024 Darren Soothill
+# username password repo[:path][@ref] [attribute=value ...]
+#
+# Password may be '-', 'none', or 'null' to skip setting it. Prefix the
+# password with 'hash:' to provide a pre-hashed value for chpasswd -e.
+# Additional attributes supported:
+#   gecos="Full Name"   Friendly display name for the account
+#   shell=/bin/zsh       Login shell
+#   home=/srv/user       Home directory
+#   uid=1050             Numeric UID override
+#   gid=1050             Numeric GID override
+#   github_user=name     Pull keys from https://github.com/<name>.keys
+#   github_url=https://example/keys.pub  Fetch keys from an arbitrary URL
+# Each repo specification adds a GitHub source in the form owner/repo[:path][@ref].
+# The path defaults to 'authorized_keys' and ref defaults to 'main'.
+
+deploy changeme octocat/keys:deploy.pub@main gecos="Deployment User"
+# Replace the hash placeholder below with a value generated via `openssl passwd -6` or similar.
+admin hash:$6$saltsalt$examplehashvalue github_user=admin
