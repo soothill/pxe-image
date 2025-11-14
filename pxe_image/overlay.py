@@ -1,8 +1,6 @@
 """Helpers for rendering the overlay filesystem used during the build."""
 # Copyright (c) 2024 Darren Soothill
 
-from __future__ import annotations
-
 import json
 import shutil
 from pathlib import Path

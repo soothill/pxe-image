@@ -1,8 +1,6 @@
 """Configuration loading and validation helpers."""
 # Copyright (c) 2024 Darren Soothill
 
-from __future__ import annotations
-
 import json
 import shutil
 import subprocess
@@ -58,8 +56,9 @@ def validate_packages(packages: Iterable[object]) -> List[str]:
         print(f"Validating package '{pkg}' with zypper info")
         result = subprocess.run(
             ["zypper", "--non-interactive", "info", pkg],
-            capture_output=True,
-            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
         )
         if result.returncode != 0:
             missing.append(pkg)

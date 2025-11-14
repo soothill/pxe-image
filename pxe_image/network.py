@@ -1,8 +1,6 @@
 """Network discovery utilities."""
 # Copyright (c) 2024 Darren Soothill
 
-from __future__ import annotations
-
 import json
 import subprocess
 from pathlib import Path
@@ -20,8 +18,9 @@ def detect_default_interface() -> str:
     try:
         result = subprocess.run(
             ["ip", "-json", "route", "show", "default"],
-            capture_output=True,
-            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
             check=True,
         )
     except (FileNotFoundError, subprocess.CalledProcessError) as exc:
@@ -39,8 +38,9 @@ def detect_default_gateway() -> Optional[str]:
     try:
         result = subprocess.run(
             ["ip", "-json", "route", "show", "default"],
-            capture_output=True,
-            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
             check=True,
         )
     except (FileNotFoundError, subprocess.CalledProcessError):
@@ -70,8 +70,9 @@ def gather_interface_config(interface: str) -> NetworkInfo:
     try:
         result = subprocess.run(
             ["ip", "-json", "addr", "show", "dev", interface],
-            capture_output=True,
-            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
             check=True,
         )
     except (FileNotFoundError, subprocess.CalledProcessError) as exc:

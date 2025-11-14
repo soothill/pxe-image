@@ -1,21 +1,22 @@
 """Parsers for the text-based configuration inputs."""
 # Copyright (c) 2024 Darren Soothill
 
-from __future__ import annotations
-
 import json
 import shlex
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
 
 
-@dataclass
-class RepoSpec:
-    owner: str
-    repo: str
-    path: str = "authorized_keys"
-    ref: str = "main"
+class RepoSpec(object):
+    """Simple data container describing a GitHub repository location."""
+
+    __slots__ = ("owner", "repo", "path", "ref")
+
+    def __init__(self, owner: str, repo: str, path: str = "authorized_keys", ref: str = "main") -> None:
+        self.owner = owner
+        self.repo = repo
+        self.path = path
+        self.ref = ref
 
 
 def read_lines(path: Path) -> List[str]:
