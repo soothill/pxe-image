@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2024 Darren Soothill
+"""First boot provisioning helper for the custom KIWI image."""
 """First boot provisioning helper for the custom KIWI image."""
 from __future__ import annotations
 
@@ -27,6 +29,21 @@ def ensure_group(name: str) -> None:
         grp.getgrnam(name)
     except KeyError:
         subprocess.run(["groupadd", "-f", name], check=True)
+
+
+def set_user_password(username: str, password: str, hashed: bool = False) -> None:
+    command = ["chpasswd"]
+    if hashed:
+        command.append("-e")
+    try:
+        subprocess.run(
+            command,
+            input="{}:{}\n".format(username, password),
+            universal_newlines=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        print(f"Failed to set password for {username}: {exc}", file=sys.stderr)
 
 
 def ensure_user(user: Dict) -> None:
@@ -68,6 +85,11 @@ def ensure_user(user: Dict) -> None:
         wheel_group = None
     if wheel_group:
         subprocess.run(["usermod", "-aG", wheel_group, username], check=True)
+
+    password = user.get("password")
+    if isinstance(password, str) and password:
+        hashed = bool(user.get("password_is_hashed"))
+        set_user_password(username, password, hashed)
 
     authorized_keys = collect_authorized_keys(user)
     if authorized_keys:
@@ -162,6 +184,13 @@ def record_target_disk(target_path: Path) -> Optional[str]:
     if not detector.exists():
         return None
     try:
+        result = subprocess.run(
+            [str(detector)],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
         result = subprocess.run([str(detector)], check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError:
         return None

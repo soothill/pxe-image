@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+# Copyright (c) 2024 Darren Soothill
+"""Render configuration JSON from simple text files."""
+
+import argparse
+from pathlib import Path
+from typing import Iterable, Optional
+
+from pxe_image.simple_config import dump_config, render_from_files
+
+
+def parse_args(argv: Optional[Iterable[str]] = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Render JSON configuration from simple text files")
+    parser.add_argument("--users", type=Path, default=Path("config/users.txt"), help="Path to the users definition file")
+    parser.add_argument(
+        "--packages", type=Path, default=Path("config/packages.txt"), help="Path to the packages list"
+    )
+    parser.add_argument(
+        "--services", type=Path, default=Path("config/services.txt"), help="Path to the services list"
+    )
+    parser.add_argument(
+        "--output", type=Path, required=True, help="Destination JSON file that will be created or overwritten"
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: Optional[Iterable[str]] = None) -> int:
+    args = parse_args(argv)
+
+    try:
+        config = render_from_files(args.users, args.packages, args.services)
+    except ValueError as exc:
+        raise SystemExit(str(exc))
+
+    dump_config(config, args.output)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
