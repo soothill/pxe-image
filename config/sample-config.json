@@ -1,0 +1,32 @@
+{
+  "packages": [
+    "vim",
+    "htop"
+  ],
+  "services": {
+    "enable": [
+      "sshd.service"
+    ],
+    "disable": []
+  },
+  "users": [
+    {
+      "username": "deploy",
+      "gecos": "Deployment User",
+      "shell": "/bin/bash",
+      "github_keys": [
+        {
+          "type": "user",
+          "user": "octocat"
+        },
+        {
+          "type": "repo",
+          "owner": "octocat",
+          "repo": "keys",
+          "path": "deploy.pub",
+          "ref": "main"
+        }
+      ]
+    }
+  ]
+}

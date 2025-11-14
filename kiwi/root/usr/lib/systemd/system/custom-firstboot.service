@@ -1,0 +1,15 @@
+[Unit]
+Description=Custom first boot provisioning
+After=network-online.target wicked.service NetworkManager.service
+Wants=network-online.target
+ConditionFirstBoot=yes
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/custom-firstboot.sh
+RemainAfterExit=no
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
