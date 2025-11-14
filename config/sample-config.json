@@ -1,5 +1,6 @@
 {
   "_copyright": "Copyright (c) 2025 Darren Soothill",
+  "_copyright": "Copyright (c) 2024 Darren Soothill",
   "packages": [
     "vim",
     "htop"

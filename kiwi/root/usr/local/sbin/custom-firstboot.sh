@@ -1,5 +1,6 @@
 #!/bin/bash
 # Copyright (c) 2025 Darren Soothill
+# Copyright (c) 2024 Darren Soothill
 set -euo pipefail
 LOG_FILE="/var/log/custom-firstboot.log"
 exec >>"${LOG_FILE}" 2>&1

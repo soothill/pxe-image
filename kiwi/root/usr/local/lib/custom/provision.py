@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # Copyright (c) 2025 Darren Soothill
 """First boot provisioning helper for the custom KIWI image."""
+# Copyright (c) 2024 Darren Soothill
+"""First boot provisioning helper for the custom KIWI image."""
+"""First boot provisioning helper for the custom KIWI image."""
+from __future__ import annotations
 
 import argparse
 import json
@@ -126,6 +130,7 @@ def collect_authorized_keys(user: Dict) -> List[str]:
         except RuntimeError as exc:
             source_desc = json.dumps(source, sort_keys=True)
             print(f"Unable to fetch keys from {source_desc}: {exc}", file=sys.stderr)
+        except (KeyError, RuntimeError):
             continue
 
         for key in keys:
@@ -175,6 +180,12 @@ def install_authorized_keys(username: str, keys: Iterable[str]) -> None:
     if output:
         output += "\n"
     authorized_keys_path.write_text(output, encoding="utf-8")
+    existing_keys: Set[str] = set()
+    if authorized_keys_path.exists():
+        existing_keys = {line.strip() for line in authorized_keys_path.read_text(encoding="utf-8").splitlines() if line.strip()}
+
+    new_keys = existing_keys.union(keys)
+    authorized_keys_path.write_text("\n".join(sorted(new_keys)) + "\n", encoding="utf-8")
     os.chown(ssh_dir, user_info.pw_uid, user_info.pw_gid)
     os.chown(authorized_keys_path, user_info.pw_uid, user_info.pw_gid)
     os.chmod(authorized_keys_path, 0o600)
@@ -210,6 +221,7 @@ def record_target_disk(target_path: Path) -> Optional[str]:
             stderr=subprocess.PIPE,
             universal_newlines=True,
         )
+        result = subprocess.run([str(detector)], check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError:
         return None
     disk = result.stdout.strip()

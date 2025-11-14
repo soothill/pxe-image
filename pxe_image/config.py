@@ -3,11 +3,15 @@
 
 import json
 import re
+# Copyright (c) 2024 Darren Soothill
+
+import json
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 from typing import Iterable, Iterator, List, Mapping, MutableMapping, Sequence
+from typing import Iterable, List, Mapping, MutableMapping
 
 
 class ConfigError(RuntimeError):
@@ -66,6 +70,14 @@ def _extract_missing_packages(output: str, requested: Sequence[str]) -> List[str
     return missing
 
 
+    for pkg in packages:
+        if isinstance(pkg, str):
+            stripped = pkg.strip()
+            if stripped:
+                normalised.append(stripped)
+    return normalised
+
+
 def validate_packages(packages: Iterable[object]) -> List[str]:
     """Validate that each package listed exists via ``zypper info``."""
     pkg_list = _normalise_packages(packages)
@@ -81,6 +93,10 @@ def validate_packages(packages: Iterable[object]) -> List[str]:
         print("Validating packages with:", " ".join(command))
         result = subprocess.run(
             command,
+    for pkg in pkg_list:
+        print(f"Validating package '{pkg}' with zypper info")
+        result = subprocess.run(
+            ["zypper", "--non-interactive", "info", pkg],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True,
@@ -90,6 +106,7 @@ def validate_packages(packages: Iterable[object]) -> List[str]:
             for pkg in chunk_missing:
                 if pkg not in missing:
                     missing.append(pkg)
+            missing.append(pkg)
             sys.stderr.write(result.stdout)
             sys.stderr.write(result.stderr)
 

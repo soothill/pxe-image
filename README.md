@@ -1,4 +1,5 @@
 <!-- Copyright (c) 2025 Darren Soothill -->
+<!-- Copyright (c) 2024 Darren Soothill -->
 
 # Custom openSUSE ISO builder
 
@@ -20,6 +21,10 @@ custom openSUSE-based ISO image. The resulting image:
 ├── kiwi/                   # KIWI description, scripts and baked-in assets
 │   └── root/               # Files copied into the image filesystem
 └── pxe_image/              # Python package shared by the CLI utilities
+├── bin/                    # Entry-point CLI used to orchestrate builds
+├── config/                 # Example configuration files
+├── kiwi/                   # KIWI description, scripts and baked-in assets
+│   └── root/               # Files copied into the image filesystem
 └── README.md
 ```
 
@@ -73,6 +78,8 @@ All runtime customisation is driven through a JSON file. The example at
   `zypper --no-refresh info` calls before `kiwi-ng` is invoked and installed during the
   KIWI `config` stage. Duplicates are removed automatically so configuration and build
   inputs stay aligned.
+- `packages`: a list of additional RPM names that will be validated with `zypper info`
+  before `kiwi-ng` is invoked and installed during the KIWI `config` stage.
 - `services.enable` / `services.disable`: services that should be enabled/started or
   disabled/stopped on first boot.
 - `users`: each user is created on first boot, added to the `sudo` (and `wheel` if present)
@@ -101,6 +108,8 @@ generate the JSON automatically:
   preserving the original order.
 - `config/services.txt`: systemd units that should be enabled and started on first boot.
   Like packages, repeated lines are ignored to avoid redundant service actions.
+- `config/packages.txt`: one package name per line.
+- `config/services.txt`: systemd units that should be enabled and started on first boot.
 
 Convert these files into JSON with:
 
@@ -168,6 +177,11 @@ runs `/usr/local/sbin/custom-firstboot.sh`, which:
 2. Creates requested users, fetches their SSH keys from GitHub and ensures they are members
    of the `sudo` group. Any unreachable GitHub sources are logged to the provisioning log
    so issues can be diagnosed after boot.
+1. Detects the smallest disk using `detect-smallest-disk.sh`, records the target under
+   `/etc/custom/install_target`, and (when `kiwi-install` is available) installs the image
+   onto that disk automatically.
+2. Creates requested users, fetches their SSH keys from GitHub and ensures they are members
+   of the `sudo` group.
 3. Enables/disables the requested services.
 
 Logs from this process are stored at `/var/log/custom-firstboot.log` inside the provisioned

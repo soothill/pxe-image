@@ -1,10 +1,12 @@
 """Network discovery utilities."""
 # Copyright (c) 2025 Darren Soothill
+# Copyright (c) 2024 Darren Soothill
 
 import json
 import subprocess
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional
 
 
 class NetworkError(RuntimeError):
@@ -15,6 +17,7 @@ NetworkInfo = Dict[str, object]
 
 
 def _load_default_routes(strict: bool) -> List[Dict[str, object]]:
+def detect_default_interface() -> str:
     try:
         result = subprocess.run(
             ["ip", "-json", "route", "show", "default"],
@@ -80,6 +83,39 @@ def detect_default_gateway() -> Optional[str]:
     return _extract_route_field(routes, "gateway")
 
 
+            check=True,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+        raise NetworkError(f"Unable to detect default interface: {exc}") from exc
+
+    routes = json.loads(result.stdout or "[]")
+    for entry in routes:
+        dev = entry.get("dev")
+        if dev:
+            return str(dev)
+    raise NetworkError("No default network interface detected")
+
+
+def detect_default_gateway() -> Optional[str]:
+    try:
+        result = subprocess.run(
+            ["ip", "-json", "route", "show", "default"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            check=True,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return None
+
+    routes = json.loads(result.stdout or "[]")
+    for entry in routes:
+        gateway = entry.get("gateway")
+        if gateway:
+            return str(gateway)
+    return None
+
+
 def read_resolv_conf(path: Path = Path("/etc/resolv.conf")) -> List[str]:
     if not path.exists():
         return []
@@ -93,6 +129,7 @@ def read_resolv_conf(path: Path = Path("/etc/resolv.conf")) -> List[str]:
 
 
 def _build_interface_config(interface: str, gateway: Optional[str]) -> NetworkInfo:
+def gather_interface_config(interface: str) -> NetworkInfo:
     try:
         result = subprocess.run(
             ["ip", "-json", "addr", "show", "dev", interface],
@@ -123,6 +160,7 @@ def _build_interface_config(interface: str, gateway: Optional[str]) -> NetworkIn
         "address": address,
         "prefixlen": prefixlen,
         "gateway": gateway,
+        "gateway": detect_default_gateway(),
         "dns": read_resolv_conf(),
         "mtu": data.get("mtu"),
     }

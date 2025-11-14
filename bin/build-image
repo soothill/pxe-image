@@ -3,6 +3,15 @@
 """CLI wrapper for building the custom KIWI ISO."""
 
 import argparse
+# Copyright (c) 2024 Darren Soothill
+"""CLI wrapper for building the custom KIWI ISO."""
+
+import argparse
+"""CLI wrapper for building the custom KIWI ISO."""
+from __future__ import annotations
+
+import argparse
+import json
 import shutil
 import subprocess
 import sys
@@ -17,6 +26,153 @@ from pxe_image.network import (
     gather_interface_config_with_gateway,
 )
 from pxe_image.overlay import prepare_overlay_root, write_overlay
+from pxe_image.network import NetworkError, detect_default_interface, gather_interface_config
+from pxe_image.overlay import prepare_overlay_root, write_overlay
+from typing import Dict, Iterable, List, Optional
+
+
+def load_config(path: Path) -> Dict:
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            return json.load(handle)
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Failed to parse configuration {path}: {exc}") from exc
+
+
+def validate_packages(packages: Iterable[str]) -> None:
+    pkg_list = [pkg.strip() for pkg in packages if isinstance(pkg, str) and pkg.strip()]
+    if not pkg_list:
+        return
+
+    if shutil.which("zypper") is None:
+        raise SystemExit("zypper not found on the host; package validation cannot continue")
+
+    for pkg in pkg_list:
+        print(f"Validating package '{pkg}' with zypper info")
+        result = subprocess.run(["zypper", "--non-interactive", "info", pkg], capture_output=True, text=True)
+        if result.returncode != 0:
+            print(result.stdout)
+            print(result.stderr, file=sys.stderr)
+            raise SystemExit(f"Package '{pkg}' could not be validated; aborting build")
+
+
+def detect_default_interface() -> str:
+    try:
+        result = subprocess.run(["ip", "-json", "route", "show", "default"], capture_output=True, text=True, check=True)
+    except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+        raise SystemExit(f"Unable to detect default interface: {exc}") from exc
+
+    routes = json.loads(result.stdout or "[]")
+    for entry in routes:
+        dev = entry.get("dev")
+        if dev:
+            return dev
+    raise SystemExit("No default network interface detected")
+
+
+def gather_interface_config(interface: str) -> Dict:
+    try:
+        result = subprocess.run(["ip", "-json", "addr", "show", "dev", interface], capture_output=True, text=True, check=True)
+    except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+        raise SystemExit(f"Unable to inspect interface {interface}: {exc}") from exc
+
+    addr_info = json.loads(result.stdout or "[]")
+    if not addr_info:
+        raise SystemExit(f"Interface {interface} has no address information")
+
+    data = addr_info[0]
+    inet = None
+    for entry in data.get("addr_info", []):
+        if entry.get("family") == "inet":
+            inet = entry
+            break
+
+    if not inet:
+        raise SystemExit(f"Interface {interface} has no IPv4 configuration")
+
+    gateway = detect_default_gateway()
+    dns_servers = read_resolv_conf()
+
+    address = inet.get("local")
+    prefixlen = inet.get("prefixlen")
+    if not address or prefixlen is None:
+        raise SystemExit(f"Incomplete IPv4 configuration detected for interface {interface}")
+
+    return {
+        "interface": interface,
+        "address": address,
+        "prefixlen": prefixlen,
+        "gateway": gateway,
+        "dns": dns_servers,
+        "mtu": data.get("mtu"),
+    }
+
+
+def detect_default_gateway() -> Optional[str]:
+    try:
+        result = subprocess.run(["ip", "-json", "route", "show", "default"], capture_output=True, text=True, check=True)
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        return None
+
+    routes = json.loads(result.stdout or "[]")
+    for entry in routes:
+        gw = entry.get("gateway")
+        if gw:
+            return gw
+    return None
+
+
+def read_resolv_conf() -> List[str]:
+    path = Path("/etc/resolv.conf")
+    if not path.exists():
+        return []
+    servers: List[str] = []
+    for line in path.read_text(encoding="utf-8", errors="ignore").splitlines():
+        parts = line.split()
+        if len(parts) == 2 and parts[0] == "nameserver":
+            servers.append(parts[1])
+    return servers
+
+
+def render_ifcfg(network: Dict) -> str:
+    dns = " ".join(network.get("dns", []))
+    gateway = network.get("gateway")
+    mtu = network.get("mtu")
+    content = [
+        f"DEVICE='{network['interface']}'",
+        "BOOTPROTO='static'",
+        "STARTMODE='auto'",
+        "ONBOOT='yes'",
+        "DEFROUTE='yes'",
+        "PEERDNS='no'",
+        f"IPADDR='{network['address']}/{network['prefixlen']}'",
+    ]
+    if gateway:
+        content.append(f"GATEWAY='{gateway}'")
+    if dns:
+        content.append(f"DNS='{dns}'")
+    if mtu:
+        content.append(f"MTU='{mtu}'")
+    return "\n".join(content) + "\n"
+
+
+def write_overlay(overlay_root: Path, config: Dict, network: Dict) -> None:
+    opt_dir = overlay_root / "opt/custom"
+    opt_dir.mkdir(parents=True, exist_ok=True)
+
+    config_with_network = dict(config)
+    config_with_network["network"] = network
+    config_path = opt_dir / "config.json"
+    config_path.write_text(json.dumps(config_with_network, indent=2), encoding="utf-8")
+
+    network_dir = overlay_root / "etc/sysconfig/network"
+    network_dir.mkdir(parents=True, exist_ok=True)
+    iface_path = network_dir / f"ifcfg-{network['interface']}"
+    iface_path.write_text(render_ifcfg(network), encoding="utf-8")
+
+    custom_dir = overlay_root / "etc/custom"
+    custom_dir.mkdir(parents=True, exist_ok=True)
+    (custom_dir / "network.json").write_text(json.dumps(network, indent=2), encoding="utf-8")
 
 
 def build_image(description: Path, target_dir: Path, overlay_root: Path, kiwi_args: List[str]) -> None:
@@ -71,11 +227,29 @@ def main(argv: Optional[List[str]] = None) -> int:
         else:
             interface, gateway = detect_default_interface_and_gateway()
         network = gather_interface_config_with_gateway(interface, gateway)
+        validate_packages(config.get("packages", []))
+    except ConfigError as exc:
+        raise SystemExit(str(exc))
+
+    try:
+        interface = args.interface or detect_default_interface()
+        network = gather_interface_config(interface)
     except NetworkError as exc:
         raise SystemExit(str(exc))
 
     overlay_root = args.overlay_root
     prepare_overlay_root(overlay_root)
+    config = load_config(args.config)
+    validate_packages(config.get("packages", []))
+
+    interface = args.interface or detect_default_interface()
+    network = gather_interface_config(interface)
+
+    overlay_root = args.overlay_root
+    if overlay_root.exists():
+        shutil.rmtree(overlay_root)
+    overlay_root.mkdir(parents=True)
+
     write_overlay(overlay_root, config, network)
 
     if args.skip_build:
