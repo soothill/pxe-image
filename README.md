@@ -1,3 +1,4 @@
+<!-- Copyright (c) 2025 Darren Soothill -->
 <!-- Copyright (c) 2024 Darren Soothill -->
 
 # Custom openSUSE ISO builder
@@ -73,6 +74,10 @@ All runtime customisation is driven through a JSON file. The example at
 }
 ```
 
+- `packages`: a list of additional RPM names that will be validated with batched
+  `zypper --no-refresh info` calls before `kiwi-ng` is invoked and installed during the
+  KIWI `config` stage. Duplicates are removed automatically so configuration and build
+  inputs stay aligned.
 - `packages`: a list of additional RPM names that will be validated with `zypper info`
   before `kiwi-ng` is invoked and installed during the KIWI `config` stage.
 - `services.enable` / `services.disable`: services that should be enabled/started or
@@ -99,6 +104,10 @@ generate the JSON automatically:
   skip password management. Multiple repositories, direct URLs and GitHub usernames can be
   specified on the same line; the parser converts them all into the JSON structure expected
   by the provisioning scripts.
+- `config/packages.txt`: one package name per line. Duplicate entries are collapsed while
+  preserving the original order.
+- `config/services.txt`: systemd units that should be enabled and started on first boot.
+  Like packages, repeated lines are ignored to avoid redundant service actions.
 - `config/packages.txt`: one package name per line.
 - `config/services.txt`: systemd units that should be enabled and started on first boot.
 
@@ -162,6 +171,12 @@ be merged cleanly on distributions such as openSUSE Leap 15.4 that still provide
 During the first boot of the generated image, the `custom-firstboot.service` systemd unit
 runs `/usr/local/sbin/custom-firstboot.sh`, which:
 
+1. Detects the smallest writable disk using `detect-smallest-disk.sh`, records the target under
+   `/etc/custom/install_target`, and (when `kiwi-install` is available) installs the image
+   onto that disk automatically.
+2. Creates requested users, fetches their SSH keys from GitHub and ensures they are members
+   of the `sudo` group. Any unreachable GitHub sources are logged to the provisioning log
+   so issues can be diagnosed after boot.
 1. Detects the smallest disk using `detect-smallest-disk.sh`, records the target under
    `/etc/custom/install_target`, and (when `kiwi-install` is available) installs the image
    onto that disk automatically.

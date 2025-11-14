@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2025 Darren Soothill
+"""First boot provisioning helper for the custom KIWI image."""
 # Copyright (c) 2024 Darren Soothill
 """First boot provisioning helper for the custom KIWI image."""
 """First boot provisioning helper for the custom KIWI image."""
@@ -121,6 +123,13 @@ def collect_authorized_keys(user: Dict) -> List[str]:
                 keys = fetch_remote_keys(url)
             else:
                 continue
+        except KeyError as exc:
+            source_desc = json.dumps(source, sort_keys=True)
+            print(f"Skipping malformed GitHub key source {source_desc}: {exc}", file=sys.stderr)
+            continue
+        except RuntimeError as exc:
+            source_desc = json.dumps(source, sort_keys=True)
+            print(f"Unable to fetch keys from {source_desc}: {exc}", file=sys.stderr)
         except (KeyError, RuntimeError):
             continue
 
@@ -150,6 +159,27 @@ def install_authorized_keys(username: str, keys: Iterable[str]) -> None:
     ssh_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
 
     authorized_keys_path = ssh_dir / "authorized_keys"
+    existing_keys: List[str] = []
+    if authorized_keys_path.exists():
+        existing_keys = [
+            line.strip()
+            for line in authorized_keys_path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+
+    incoming_keys = [key.strip() for key in keys if isinstance(key, str) and key.strip()]
+
+    merged: List[str] = []
+    seen: Set[str] = set()
+    for key in existing_keys + incoming_keys:
+        if key and key not in seen:
+            seen.add(key)
+            merged.append(key)
+
+    output = "\n".join(merged)
+    if output:
+        output += "\n"
+    authorized_keys_path.write_text(output, encoding="utf-8")
     existing_keys: Set[str] = set()
     if authorized_keys_path.exists():
         existing_keys = {line.strip() for line in authorized_keys_path.read_text(encoding="utf-8").splitlines() if line.strip()}

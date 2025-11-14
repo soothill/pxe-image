@@ -1,4 +1,10 @@
 #!/bin/bash
+# Copyright (c) 2025 Darren Soothill
+set -euo pipefail
+
+smallest_disk=$(
+    lsblk -bndo NAME,SIZE,TYPE,RO         | awk '$3 == "disk" && $4 == "0" {print $1 " " $2}'         | sort -n -k2         | head -n1         | awk '{print $1}'
+)
 # Copyright (c) 2024 Darren Soothill
 set -euo pipefail
 

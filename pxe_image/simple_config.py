@@ -1,4 +1,5 @@
 """Parsers for the text-based configuration inputs."""
+# Copyright (c) 2025 Darren Soothill
 # Copyright (c) 2024 Darren Soothill
 
 import json
@@ -19,6 +20,16 @@ class RepoSpec(object):
         self.ref = ref
 
 
+def _deduplicate_preserve_order(values: List[str]) -> List[str]:
+    seen = set()
+    unique: List[str] = []
+    for value in values:
+        if value not in seen:
+            seen.add(value)
+            unique.append(value)
+    return unique
+
+
 def read_lines(path: Path) -> List[str]:
     if not path.exists():
         return []
@@ -32,6 +43,7 @@ def parse_packages(path: Path) -> List[str]:
         if not stripped or stripped.startswith("#"):
             continue
         packages.append(stripped)
+    return _deduplicate_preserve_order(packages)
     return packages
 
 
@@ -42,6 +54,7 @@ def parse_services(path: Path) -> List[str]:
         if not stripped or stripped.startswith("#"):
             continue
         services.append(stripped)
+    return _deduplicate_preserve_order(services)
     return services
 
 

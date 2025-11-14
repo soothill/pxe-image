@@ -1,4 +1,8 @@
 """Configuration loading and validation helpers."""
+# Copyright (c) 2025 Darren Soothill
+
+import json
+import re
 # Copyright (c) 2024 Darren Soothill
 
 import json
@@ -6,6 +10,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Iterable, Iterator, List, Mapping, MutableMapping, Sequence
 from typing import Iterable, List, Mapping, MutableMapping
 
 
@@ -34,6 +39,37 @@ def load_config(path: Path) -> JsonMapping:
 
 def _normalise_packages(packages: Iterable[object]) -> List[str]:
     normalised: List[str] = []
+    seen = set()
+    for pkg in packages:
+        if not isinstance(pkg, str):
+            continue
+        stripped = pkg.strip()
+        if not stripped or stripped in seen:
+            continue
+        seen.add(stripped)
+        normalised.append(stripped)
+    return normalised
+
+
+def _chunked(values: Sequence[str], size: int) -> Iterator[Sequence[str]]:
+    for index in range(0, len(values), size):
+        yield values[index : index + size]
+
+
+_MISSING_RE = re.compile(r"Package '([^']+)' not found\.\s*", re.IGNORECASE)
+
+
+def _extract_missing_packages(output: str, requested: Sequence[str]) -> List[str]:
+    missing: List[str] = []
+    if output:
+        matches = _MISSING_RE.findall(output)
+        if matches:
+            missing.extend(matches)
+    if not missing:
+        missing.extend(requested)
+    return missing
+
+
     for pkg in packages:
         if isinstance(pkg, str):
             stripped = pkg.strip()
@@ -52,6 +88,11 @@ def validate_packages(packages: Iterable[object]) -> List[str]:
         raise ConfigError("zypper not found on the host; package validation cannot continue")
 
     missing: List[str] = []
+    for chunk in _chunked(pkg_list, 25):
+        command = ["zypper", "--non-interactive", "--no-refresh", "info", *chunk]
+        print("Validating packages with:", " ".join(command))
+        result = subprocess.run(
+            command,
     for pkg in pkg_list:
         print(f"Validating package '{pkg}' with zypper info")
         result = subprocess.run(
@@ -61,6 +102,10 @@ def validate_packages(packages: Iterable[object]) -> List[str]:
             universal_newlines=True,
         )
         if result.returncode != 0:
+            chunk_missing = _extract_missing_packages(result.stdout + result.stderr, chunk)
+            for pkg in chunk_missing:
+                if pkg not in missing:
+                    missing.append(pkg)
             missing.append(pkg)
             sys.stderr.write(result.stdout)
             sys.stderr.write(result.stderr)
