@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+# Copyright (c) 2025 Darren Soothill
+"""CLI wrapper for building the custom KIWI ISO."""
+
+import argparse
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+from typing import List, Optional
+
+from pxe_image.config import ConfigError, load_config, validate_packages
+from pxe_image.network import (
+    NetworkError,
+    detect_default_gateway,
+    detect_default_interface_and_gateway,
+    gather_interface_config_with_gateway,
+)
+from pxe_image.overlay import prepare_overlay_root, write_overlay
+
+
+def build_image(description: Path, target_dir: Path, overlay_root: Path, kiwi_args: List[str]) -> None:
+    if shutil.which("kiwi-ng") is None:
+        raise SystemExit("kiwi-ng not found on PATH; cannot continue")
+    cmd = [
+        "kiwi-ng",
+        "system",
+        "build",
+        "--description",
+        str(description),
+        "--target-dir",
+        str(target_dir),
+        "--overlay-root",
+        str(overlay_root),
+        *kiwi_args,
+    ]
+    print("Executing:", " ".join(cmd))
+    subprocess.run(cmd, check=True)
+
+
+def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Build a custom openSUSE ISO with KIWI")
+    parser.add_argument("--config", required=True, type=Path, help="Path to the JSON configuration file")
+    parser.add_argument("--description", type=Path, default=Path("kiwi"), help="Path to the KIWI description directory")
+    parser.add_argument("--target-dir", type=Path, default=Path("build/artifacts"), help="Directory where build artifacts are stored")
+    parser.add_argument("--overlay-root", type=Path, default=Path("build/overlay"), help="Directory to render the overlay root")
+    parser.add_argument("--interface", type=str, default=None, help="Network interface to mirror (defaults to the active interface)")
+    parser.add_argument("--skip-build", action="store_true", help="Render the overlay but skip invoking kiwi-ng")
+    parser.add_argument("--extra-kiwi-args", nargs=argparse.REMAINDER, help="Additional arguments forwarded to kiwi-ng after '--'")
+    return parser.parse_args(argv)
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    args = parse_args(argv)
+
+    try:
+        config = load_config(args.config)
+    except ConfigError as exc:
+        raise SystemExit(str(exc))
+
+    try:
+        packages = validate_packages(config.get("packages", []))
+    except ConfigError as exc:
+        raise SystemExit(str(exc))
+    config["packages"] = packages
+
+    try:
+        if args.interface:
+            interface = args.interface
+            gateway = detect_default_gateway()
+        else:
+            interface, gateway = detect_default_interface_and_gateway()
+        network = gather_interface_config_with_gateway(interface, gateway)
+    except NetworkError as exc:
+        raise SystemExit(str(exc))
+
+    overlay_root = args.overlay_root
+    prepare_overlay_root(overlay_root)
+    write_overlay(overlay_root, config, network)
+
+    if args.skip_build:
+        print("Overlay rendered; skipping kiwi-ng invocation as requested")
+        return 0
+
+    target_dir = args.target_dir
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    extra_args = args.extra_kiwi_args or []
+    if extra_args and extra_args[0] == "--":
+        extra_args = extra_args[1:]
+    build_image(args.description, target_dir, overlay_root, extra_args)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
