@@ -15,10 +15,11 @@ custom openSUSE-based ISO image. The resulting image:
 
 ```
 .
-├── bin/                    # Entry-point CLI used to orchestrate builds
-├── config/                 # Example configuration files
+├── bin/                    # Entry-point CLIs that wrap the shared helpers
+├── config/                 # Example configuration files and text lists
 ├── kiwi/                   # KIWI description, scripts and baked-in assets
 │   └── root/               # Files copied into the image filesystem
+└── pxe_image/              # Python package shared by the CLI utilities
 └── README.md
 ```
 
@@ -36,6 +37,12 @@ Ensure you have network connectivity to GitHub and the openSUSE repositories ref
 in `kiwi/custom-image.kiwi`.
 
 ## Configuration
+
+The command line entry points (`bin/build-image` and `bin/render-simple-config`) share a
+Python package located under `pxe_image/`.  This keeps the logic for configuration
+validation, overlay rendering, simple text parsing and network discovery in sync between
+the scripts, ensuring the branch is aligned with the latest code rather than duplicating
+behaviour in multiple places.
 
 All runtime customisation is driven through a JSON file. The example at
 `config/sample-config.json` demonstrates the expected structure:
@@ -85,7 +92,9 @@ generate the JSON automatically:
 - `config/users.txt`: each line follows `username password repo[:path][@ref] [attribute=value ...]`.
   Additional attributes include `gecos`, `shell`, `home`, `uid`, `gid`, `github_user`, and
   `github_url`. Prefix a password with `hash:` to mark it as pre-hashed or use `-`/`none` to
-  skip password management.
+  skip password management. Multiple repositories, direct URLs and GitHub usernames can be
+  specified on the same line; the parser converts them all into the JSON structure expected
+  by the provisioning scripts.
 - `config/packages.txt`: one package name per line.
 - `config/services.txt`: systemd units that should be enabled and started on first boot.
 
@@ -96,7 +105,9 @@ make config-json OUTPUT_CONFIG=config/rendered.json
 ```
 
 The rendered JSON can then be passed to `bin/build-image` or `make build` via the `CONFIG`
-variable.
+variable. Because the CLI and the Makefile both call into the shared `pxe_image`
+package, updates to the parsing logic automatically apply everywhere, keeping all
+branches aligned without manual synchronisation.
 
 ## Building an image
 
@@ -132,6 +143,14 @@ A `Makefile` is provided to streamline the two-step build process:
 - `make clean` removes the overlay and artifact directories.
 
 Variables such as `CONFIG`, `TARGET_DIR`, `OVERLAY_ROOT`, `EXTRA_KIWI_ARGS`, and `SUDO` can be overridden on the command line, e.g. `make build CONFIG=my.json EXTRA_KIWI_ARGS="--add-profile secure"`.
+
+### Python compatibility
+
+All utilities run on Python 3.6 and newer.  Earlier iterations of the project required
+Python 3.8 features which made it hard to keep multiple branches in sync on systems that
+ship an older interpreter.  The shared helpers avoid those features so the same branch can
+be merged cleanly on distributions such as openSUSE Leap 15.4 that still provide Python
+3.6.
 
 
 ## First boot automation
