@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2025 Darren Soothill
 """First boot provisioning helper for the custom KIWI image."""
-# Copyright (c) 2024 Darren Soothill
 """First boot provisioning helper for the custom KIWI image."""
 """First boot provisioning helper for the custom KIWI image."""
 from __future__ import annotations

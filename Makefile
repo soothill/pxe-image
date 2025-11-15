@@ -1,5 +1,4 @@
 # Copyright (c) 2025 Darren Soothill
-# Copyright (c) 2024 Darren Soothill
 
 SHELL := /bin/bash
 
