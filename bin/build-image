@@ -1,11 +1,6 @@
 #!/usr/bin/env python3
 """CLI wrapper for building the custom KIWI ISO."""
 
-import argparse
-"""CLI wrapper for building the custom KIWI ISO."""
-
-import argparse
-"""CLI wrapper for building the custom KIWI ISO."""
 from __future__ import annotations
 
 import argparse
