@@ -68,6 +68,7 @@ download:
 		echo "Error: $(KIWI) not found on PATH. Install KIWI NG or adjust the PATH for sudo."; \
 		exit 1; \
 	fi
+	@$(SUDO) rm -rf $(ROOT_DIR)
 	$(SUDO) $(KIWI) system prepare --description $(DESCRIPTION) --root $(ROOT_DIR) $(EXTRA_KIWI_ARGS)
 
 
