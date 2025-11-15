@@ -80,4 +80,4 @@ deps:
 	$(SUDO) zypper --non-interactive --no-gpg-checks install --auto-agree-with-licenses --no-recommends $(HOST_PACKAGES)
 
 clean:
-	rm -rf $(TARGET_DIR) $(OVERLAY_ROOT)
+	$(SUDO) rm -rf $(TARGET_DIR) $(OVERLAY_ROOT)
