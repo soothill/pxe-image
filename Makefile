@@ -55,7 +55,12 @@ config-json:
 download:
 	mkdir -p $(TARGET_DIR)
 	$(SUDO) $(BIN) --config $(CONFIG) --description $(DESCRIPTION) --target-dir $(TARGET_DIR) --overlay-root $(OVERLAY_ROOT) --skip-build $(EXTRA_ARG_OPTION)
+	@if ! $(SUDO) sh -c 'command -v $(KIWI) >/dev/null 2>&1'; then \
+		echo "Error: $(KIWI) not found on PATH. Install KIWI NG or adjust the PATH for sudo."; \
+		exit 1; \
+	fi
 	$(SUDO) $(KIWI) system prepare --description $(DESCRIPTION) --target-dir $(TARGET_DIR) --overlay-root $(OVERLAY_ROOT) $(EXTRA_KIWI_ARGS)
+
 
 build: download
 	$(SUDO) $(BIN) --config $(CONFIG) --description $(DESCRIPTION) --target-dir $(TARGET_DIR) --overlay-root $(OVERLAY_ROOT) $(EXTRA_ARG_OPTION)
