@@ -10,6 +10,7 @@ BIN := ./bin/build-image
 KIWI := kiwi-ng
 HOST_PACKAGES ?= \
   python3-kiwi \
+	kiwi-boot-descriptions \
 	tftp \
 	dnsmasq \
 	syslinux
