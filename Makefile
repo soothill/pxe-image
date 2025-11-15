@@ -8,6 +8,12 @@ SHELL := /bin/bash
 
 BIN := ./bin/build-image
 KIWI := kiwi-ng
+HOST_PACKAGES ?= \
+	kiwi-ng \
+	tftpboot-install \
+	tftp \
+	dnsmasq \
+	syslinux
 CONFIG ?= config/sample-config.json
 DESCRIPTION ?= kiwi
 TARGET_DIR ?= build/artifacts
@@ -21,11 +27,11 @@ OUTPUT_CONFIG ?= config/generated-config.json
 
 EXTRA_ARG_OPTION = $(strip $(if $(EXTRA_KIWI_ARGS),--extra-kiwi-args -- $(EXTRA_KIWI_ARGS),))
 
-.PHONY: help config-json download build clean
+.PHONY: help config-json download build clean deps
 
 EXTRA_ARG_OPTION = $(strip $(if $(EXTRA_KIWI_ARGS),--extra-kiwi-args -- $(EXTRA_KIWI_ARGS),))
 
-.PHONY: help download build clean
+.PHONY: help download build clean deps
 
 help:
 	@echo "Make targets for the KIWI image workflow"
@@ -35,6 +41,7 @@ help:
 	@echo "  config-json Render JSON configuration from simple text files."
 	@echo "  download  Prepare the overlay and fetch all RPM payloads (no ISO build)."
 	@echo "  build     Run the full workflow, including ISO creation (depends on download)."
+	@echo "  deps      Install host dependencies using zypper ($(HOST_PACKAGES))."
 	@echo "  clean     Remove the build and overlay directories."
 	@echo
 	@echo "Common variables (override via make VAR=value):"
@@ -64,6 +71,10 @@ download:
 
 build: download
 	$(SUDO) $(BIN) --config $(CONFIG) --description $(DESCRIPTION) --target-dir $(TARGET_DIR) --overlay-root $(OVERLAY_ROOT) $(EXTRA_ARG_OPTION)
+
+deps:
+	$(SUDO) zypper --non-interactive --gpg-auto-import-keys refresh
+	$(SUDO) zypper --non-interactive --no-gpg-checks install --auto-agree-with-licenses --no-recommends $(HOST_PACKAGES)
 
 clean:
 	rm -rf $(TARGET_DIR) $(OVERLAY_ROOT)
