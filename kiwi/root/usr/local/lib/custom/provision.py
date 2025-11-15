@@ -220,7 +220,6 @@ def record_target_disk(target_path: Path) -> Optional[str]:
             stderr=subprocess.PIPE,
             universal_newlines=True,
         )
-        result = subprocess.run([str(detector)], check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError:
         return None
     disk = result.stdout.strip()

@@ -85,7 +85,7 @@ def validate_packages(packages: Iterable[object]) -> List[str]:
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
+            universal_newlines=True,
         )
         if result.returncode != 0:
             chunk_missing = _extract_missing_packages(result.stdout + result.stderr, chunk)
