@@ -5,7 +5,6 @@ import json
 import subprocess
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
-from typing import Dict, Iterable, List, Optional
 
 
 class NetworkError(RuntimeError):
@@ -16,13 +15,12 @@ NetworkInfo = Dict[str, object]
 
 
 def _load_default_routes(strict: bool) -> List[Dict[str, object]]:
-def detect_default_interface() -> str:
     try:
         result = subprocess.run(
             ["ip", "-json", "route", "show", "default"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True,
+            text=True,
             check=False,
         )
     except FileNotFoundError as exc:
@@ -82,39 +80,6 @@ def detect_default_gateway() -> Optional[str]:
     return _extract_route_field(routes, "gateway")
 
 
-            check=True,
-        )
-    except (FileNotFoundError, subprocess.CalledProcessError) as exc:
-        raise NetworkError(f"Unable to detect default interface: {exc}") from exc
-
-    routes = json.loads(result.stdout or "[]")
-    for entry in routes:
-        dev = entry.get("dev")
-        if dev:
-            return str(dev)
-    raise NetworkError("No default network interface detected")
-
-
-def detect_default_gateway() -> Optional[str]:
-    try:
-        result = subprocess.run(
-            ["ip", "-json", "route", "show", "default"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-            check=True,
-        )
-    except (FileNotFoundError, subprocess.CalledProcessError):
-        return None
-
-    routes = json.loads(result.stdout or "[]")
-    for entry in routes:
-        gateway = entry.get("gateway")
-        if gateway:
-            return str(gateway)
-    return None
-
-
 def read_resolv_conf(path: Path = Path("/etc/resolv.conf")) -> List[str]:
     if not path.exists():
         return []
@@ -128,13 +93,12 @@ def read_resolv_conf(path: Path = Path("/etc/resolv.conf")) -> List[str]:
 
 
 def _build_interface_config(interface: str, gateway: Optional[str]) -> NetworkInfo:
-def gather_interface_config(interface: str) -> NetworkInfo:
     try:
         result = subprocess.run(
             ["ip", "-json", "addr", "show", "dev", interface],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True,
+            text=True,
             check=True,
         )
     except (FileNotFoundError, subprocess.CalledProcessError) as exc:
@@ -145,21 +109,25 @@ def gather_interface_config(interface: str) -> NetworkInfo:
         raise NetworkError(f"Interface {interface} has no address information")
 
     data = addr_info[0]
-    inet_entry = next((entry for entry in data.get("addr_info", []) if entry.get("family") == "inet"), None)
+    inet_entry = next(
+        (entry for entry in data.get("addr_info", []) if entry.get("family") == "inet"),
+        None,
+    )
     if not inet_entry:
         raise NetworkError(f"Interface {interface} has no IPv4 configuration")
 
     address = inet_entry.get("local")
     prefixlen = inet_entry.get("prefixlen")
     if not address or prefixlen is None:
-        raise NetworkError(f"Incomplete IPv4 configuration detected for interface {interface}")
+        raise NetworkError(
+            f"Incomplete IPv4 configuration detected for interface {interface}"
+        )
 
     return {
         "interface": interface,
         "address": address,
         "prefixlen": prefixlen,
         "gateway": gateway,
-        "gateway": detect_default_gateway(),
         "dns": read_resolv_conf(),
         "mtu": data.get("mtu"),
     }

@@ -43,7 +43,6 @@ def parse_packages(path: Path) -> List[str]:
             continue
         packages.append(stripped)
     return _deduplicate_preserve_order(packages)
-    return packages
 
 
 def parse_services(path: Path) -> List[str]:
@@ -54,7 +53,6 @@ def parse_services(path: Path) -> List[str]:
             continue
         services.append(stripped)
     return _deduplicate_preserve_order(services)
-    return services
 
 
 def parse_repo_spec(spec: str, lineno: int) -> RepoSpec:

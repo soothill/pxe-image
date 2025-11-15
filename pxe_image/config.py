@@ -1,5 +1,4 @@
 """Configuration loading and validation helpers."""
-# Copyright (c) 2025 Darren Soothill
 
 import json
 import re
@@ -7,10 +6,8 @@ import re
 import json
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 from typing import Iterable, Iterator, List, Mapping, MutableMapping, Sequence
-from typing import Iterable, List, Mapping, MutableMapping
 
 
 class ConfigError(RuntimeError):
@@ -31,7 +28,9 @@ def load_config(path: Path) -> JsonMapping:
         raise ConfigError(f"Failed to parse configuration '{path}': {exc}") from exc
 
     if not isinstance(data, MutableMapping):
-        raise ConfigError(f"Configuration '{path}' must contain a JSON object at the top level")
+        raise ConfigError(
+            f"Configuration '{path}' must contain a JSON object at the top level"
+        )
 
     return data
 
@@ -69,14 +68,6 @@ def _extract_missing_packages(output: str, requested: Sequence[str]) -> List[str
     return missing
 
 
-    for pkg in packages:
-        if isinstance(pkg, str):
-            stripped = pkg.strip()
-            if stripped:
-                normalised.append(stripped)
-    return normalised
-
-
 def validate_packages(packages: Iterable[object]) -> List[str]:
     """Validate that each package listed exists via ``zypper info``."""
     pkg_list = _normalise_packages(packages)
@@ -92,22 +83,15 @@ def validate_packages(packages: Iterable[object]) -> List[str]:
         print("Validating packages with:", " ".join(command))
         result = subprocess.run(
             command,
-    for pkg in pkg_list:
-        print(f"Validating package '{pkg}' with zypper info")
-        result = subprocess.run(
-            ["zypper", "--non-interactive", "info", pkg],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True,
+            text=True,
         )
         if result.returncode != 0:
             chunk_missing = _extract_missing_packages(result.stdout + result.stderr, chunk)
             for pkg in chunk_missing:
                 if pkg not in missing:
                     missing.append(pkg)
-            missing.append(pkg)
-            sys.stderr.write(result.stdout)
-            sys.stderr.write(result.stderr)
 
     if missing:
         raise ConfigError(
@@ -124,4 +108,10 @@ def merge_overlay_config(base: JsonMapping, network: Mapping[str, object]) -> Js
     return merged
 
 
-__all__ = ["ConfigError", "JsonMapping", "load_config", "validate_packages", "merge_overlay_config"]
+__all__ = [
+    "ConfigError",
+    "JsonMapping",
+    "load_config",
+    "validate_packages",
+    "merge_overlay_config",
+]
