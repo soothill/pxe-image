@@ -9,8 +9,7 @@ SHELL := /bin/bash
 BIN := ./bin/build-image
 KIWI := kiwi-ng
 HOST_PACKAGES ?= \
-	kiwi-ng \
-	tftpboot-install \
+	kiwi-cli \
 	tftp \
 	dnsmasq \
 	syslinux

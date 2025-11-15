@@ -32,7 +32,10 @@ custom openSUSE-based ISO image. The resulting image:
 The host performing the build must run openSUSE (Leap 15.5 or newer) and have the following
 packages installed:
 
-- `kiwi-ng`
+- `kiwi-cli`
+- `tftp`
+- `dnsmasq`
+- `syslinux`
 - `zypper`
 - `iproute2`
 - `python3`
