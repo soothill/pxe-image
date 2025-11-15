@@ -20,7 +20,7 @@ def _load_default_routes(strict: bool) -> List[Dict[str, object]]:
             ["ip", "-json", "route", "show", "default"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
+            universal_newlines=True,
             check=False,
         )
     except FileNotFoundError as exc:
@@ -98,7 +98,7 @@ def _build_interface_config(interface: str, gateway: Optional[str]) -> NetworkIn
             ["ip", "-json", "addr", "show", "dev", interface],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True,
+            universal_newlines=True,
             check=True,
         )
     except (FileNotFoundError, subprocess.CalledProcessError) as exc:
