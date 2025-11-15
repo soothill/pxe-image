@@ -1,6 +1,5 @@
 """Network discovery utilities."""
 # Copyright (c) 2025 Darren Soothill
-# Copyright (c) 2024 Darren Soothill
 
 import json
 import subprocess

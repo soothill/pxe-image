@@ -3,7 +3,6 @@
 """CLI wrapper for building the custom KIWI ISO."""
 
 import argparse
-# Copyright (c) 2024 Darren Soothill
 """CLI wrapper for building the custom KIWI ISO."""
 
 import argparse

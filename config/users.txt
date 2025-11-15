@@ -1,5 +1,4 @@
 # Copyright (c) 2025 Darren Soothill
-# Copyright (c) 2024 Darren Soothill
 # username password repo[:path][@ref] [attribute=value ...]
 #
 # Password may be '-', 'none', or 'null' to skip setting it. Prefix the

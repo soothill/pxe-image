@@ -3,7 +3,6 @@
 
 import json
 import re
-# Copyright (c) 2024 Darren Soothill
 
 import json
 import shutil

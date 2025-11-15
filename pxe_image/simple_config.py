@@ -1,6 +1,5 @@
 """Parsers for the text-based configuration inputs."""
 # Copyright (c) 2025 Darren Soothill
-# Copyright (c) 2024 Darren Soothill
 
 import json
 import shlex
