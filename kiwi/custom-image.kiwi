@@ -15,10 +15,10 @@
   </preferences>
 
   <repository type="rpm-md">
-    <source path="https://download.opensuse.org/distribution/leap/15.5/repo/oss/"/>
+    <source path="https://download.opensuse.org/distribution/leap/15.6/repo/oss/"/>
   </repository>
   <repository type="rpm-md">
-    <source path="https://download.opensuse.org/update/leap/15.5/oss/"/>
+    <source path="https://download.opensuse.org/update/leap/15.6/oss/"/>
   </repository>
 
   <packages type="bootstrap">
