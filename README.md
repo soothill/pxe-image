@@ -32,7 +32,10 @@ custom openSUSE-based ISO image. The resulting image:
 The host performing the build must run openSUSE (Leap 15.5 or newer) and have the following
 packages installed:
 
-- `kiwi-ng`
+- `python3-kiwi`
+- `tftp`
+- `dnsmasq`
+- `syslinux`
 - `zypper`
 - `iproute2`
 - `python3`
@@ -148,13 +151,14 @@ Additional KIWI arguments may be appended after `--extra-kiwi-args`.
 A `Makefile` is provided to streamline the two-step build process:
 
 - `make help` prints a summary of available targets and overridable variables.
+- `make deps` installs the host-side prerequisites declared in `HOST_PACKAGES` using `zypper` (overrideable via `HOST_PACKAGES="pkg1 pkg2"`).
 - `make config-json OUTPUT_CONFIG=config/rendered.json` turns the simple text inputs into a
   JSON configuration file that can be consumed by the build tooling.
-- `make download CONFIG=path/to/config.json` renders the overlay (mirroring the host network configuration) and runs `kiwi-ng system prepare` to download the RPM payload into `build/artifacts/`.
+- `make download CONFIG=path/to/config.json` renders the overlay (mirroring the host network configuration) and runs `kiwi-ng system prepare` to download the RPM payload into `build/artifacts/root/`.
 - `make build` depends on `download` and executes `bin/build-image` end-to-end to produce the ISO in the target directory.
 - `make clean` removes the overlay and artifact directories.
 
-Variables such as `CONFIG`, `TARGET_DIR`, `OVERLAY_ROOT`, `EXTRA_KIWI_ARGS`, and `SUDO` can be overridden on the command line, e.g. `make build CONFIG=my.json EXTRA_KIWI_ARGS="--add-profile secure"`.
+Variables such as `CONFIG`, `TARGET_DIR`, `ROOT_DIR`, `OVERLAY_ROOT`, `EXTRA_KIWI_ARGS`, and `SUDO` can be overridden on the command line, e.g. `make build CONFIG=my.json EXTRA_KIWI_ARGS="--add-profile secure"`.
 
 ### Python compatibility
 

@@ -8,9 +8,15 @@ SHELL := /bin/bash
 
 BIN := ./bin/build-image
 KIWI := kiwi-ng
+HOST_PACKAGES ?= \
+        python3-kiwi \
+	tftp \
+	dnsmasq \
+	syslinux
 CONFIG ?= config/sample-config.json
 DESCRIPTION ?= kiwi
 TARGET_DIR ?= build/artifacts
+ROOT_DIR ?= $(TARGET_DIR)/root
 OVERLAY_ROOT ?= build/overlay
 SUDO ?= sudo
 EXTRA_KIWI_ARGS ?=
@@ -21,11 +27,11 @@ OUTPUT_CONFIG ?= config/generated-config.json
 
 EXTRA_ARG_OPTION = $(strip $(if $(EXTRA_KIWI_ARGS),--extra-kiwi-args -- $(EXTRA_KIWI_ARGS),))
 
-.PHONY: help config-json download build clean
+.PHONY: help config-json download build clean deps
 
 EXTRA_ARG_OPTION = $(strip $(if $(EXTRA_KIWI_ARGS),--extra-kiwi-args -- $(EXTRA_KIWI_ARGS),))
 
-.PHONY: help download build clean
+.PHONY: help download build clean deps
 
 help:
 	@echo "Make targets for the KIWI image workflow"
@@ -35,6 +41,7 @@ help:
 	@echo "  config-json Render JSON configuration from simple text files."
 	@echo "  download  Prepare the overlay and fetch all RPM payloads (no ISO build)."
 	@echo "  build     Run the full workflow, including ISO creation (depends on download)."
+	@echo "  deps      Install host dependencies using zypper ($(HOST_PACKAGES))."
 	@echo "  clean     Remove the build and overlay directories."
 	@echo
 	@echo "Common variables (override via make VAR=value):"
@@ -42,6 +49,7 @@ help:
 	@echo "  DESCRIPTION=$(DESCRIPTION)"
 	@echo "  TARGET_DIR=$(TARGET_DIR)"
 	@echo "  OVERLAY_ROOT=$(OVERLAY_ROOT)"
+	@echo "  ROOT_DIR=$(ROOT_DIR)"
 	@echo "  EXTRA_KIWI_ARGS=$(EXTRA_KIWI_ARGS)"
 	@echo "  SUDO=$(SUDO)"
 	@echo "  SIMPLE_USERS=$(SIMPLE_USERS)"
@@ -54,16 +62,21 @@ config-json:
 
 download:
 	mkdir -p $(TARGET_DIR)
+	mkdir -p $(ROOT_DIR)
 	$(SUDO) $(BIN) --config $(CONFIG) --description $(DESCRIPTION) --target-dir $(TARGET_DIR) --overlay-root $(OVERLAY_ROOT) --skip-build $(EXTRA_ARG_OPTION)
 	@if ! $(SUDO) sh -c 'command -v $(KIWI) >/dev/null 2>&1'; then \
 		echo "Error: $(KIWI) not found on PATH. Install KIWI NG or adjust the PATH for sudo."; \
 		exit 1; \
 	fi
-	$(SUDO) $(KIWI) system prepare --description $(DESCRIPTION) --target-dir $(TARGET_DIR) --overlay-root $(OVERLAY_ROOT) $(EXTRA_KIWI_ARGS)
+	$(SUDO) $(KIWI) system prepare --description $(DESCRIPTION) --target-dir $(TARGET_DIR) --root $(ROOT_DIR) --overlay-root $(OVERLAY_ROOT) $(EXTRA_KIWI_ARGS)
 
 
 build: download
 	$(SUDO) $(BIN) --config $(CONFIG) --description $(DESCRIPTION) --target-dir $(TARGET_DIR) --overlay-root $(OVERLAY_ROOT) $(EXTRA_ARG_OPTION)
+
+deps:
+	$(SUDO) zypper --non-interactive --gpg-auto-import-keys refresh
+	$(SUDO) zypper --non-interactive --no-gpg-checks install --auto-agree-with-licenses --no-recommends $(HOST_PACKAGES)
 
 clean:
 	rm -rf $(TARGET_DIR) $(OVERLAY_ROOT)
