@@ -2,3 +2,5 @@
 # List of additional packages to install (one per line)
 vim
 htop
+lldpd
+

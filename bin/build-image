@@ -40,6 +40,9 @@ def build_image(
     if shutil.which("kiwi-ng") is None:
         raise SystemExit("kiwi-ng not found on PATH; cannot continue")
 
+    # Note: kiwi-ng system build does not support an --overlay-root option.
+    # The overlay is rendered into the description tree by KIWI itself during
+    # the config stage, so we only pass --description and --target-dir here.
     command = [
         "kiwi-ng",
         "system",
@@ -48,8 +51,6 @@ def build_image(
         str(description),
         "--target-dir",
         str(target_dir),
-        "--overlay-root",
-        str(overlay_root),
         *kiwi_args,
     ]
     print("Executing:", " ".join(command))
@@ -136,10 +137,23 @@ def main(argv: Optional[List[str]] = None) -> int:
     target_dir = args.target_dir
     target_dir.mkdir(parents=True, exist_ok=True)
 
+    # Pre-flight check for stale KIWI build root to avoid KiwiRootDirExists
+    kiwi_root_dir = target_dir / "build" / "image-root"
+    if kiwi_root_dir.exists():
+        print(
+            f"Error: KIWI build root directory already exists at {kiwi_root_dir}",
+            file=sys.stderr,
+        )
+        print(
+            "This usually means a previous build did not clean up properly.\n"
+            "Please run 'make clean' or delete this directory manually, e.g.:\n"
+            f"  sudo rm -rf {kiwi_root_dir}\n"
+            "Alternatively, if you intentionally want to reuse the existing root,\n"
+            "re-run this command with:\n"
+            "  --extra-kiwi-args -- --allow-existing-root",
+            file=sys.stderr,
+        )
+        return 1
+
     extra_args = _normalise_extra_args(args.extra_kiwi_args)
     build_image(args.description, target_dir, overlay_root, extra_args)
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
