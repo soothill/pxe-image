@@ -46,8 +46,20 @@ if [[ ! -d "$KIWI_IMAGE_ROOT/boot" ]]; then
 fi
 
 # Try to find kernel and initrd inside the image-root/boot
+shopt -s nullglob
 KERNEL_SRC=$(ls "$KIWI_IMAGE_ROOT"/boot/vmlinuz* 2>/dev/null | head -n1 || true)
-INITRD_SRC=$(ls "$KIWI_IMAGE_ROOT"/boot/initrd*  2>/dev/null | head -n1 || true)
+
+INITRD_SRC=""
+while IFS= read -r candidate; do
+  resolved=$(readlink -f "$candidate" || true)
+  if [[ -n "$resolved" && -e "$resolved" ]]; then
+    INITRD_SRC="$resolved"
+    break
+  else
+    echo "WARNING: Skipping initrd candidate $candidate (broken link or missing target)" >&2
+  fi
+done < <(ls -1t "$KIWI_IMAGE_ROOT"/boot/initrd* 2>/dev/null || true)
+shopt -u nullglob
 
 if [[ -z "$KERNEL_SRC" || -z "$INITRD_SRC" ]]; then
   echo "ERROR: Could not find vmlinuz* and initrd* in $KIWI_IMAGE_ROOT/boot"

@@ -208,6 +208,22 @@ def disable_services(services: Iterable[str]) -> None:
         subprocess.run(["systemctl", "stop", service], check=False)
 
 
+def install_packages(packages: Iterable[str]) -> None:
+    package_list = [pkg.strip() for pkg in packages if isinstance(pkg, str) and pkg.strip()]
+    if not package_list:
+        return
+
+    zypper = shutil.which("zypper")
+    if not zypper:
+        print("zypper not found; skipping package installation", file=sys.stderr)
+        return
+
+    try:
+        subprocess.run([zypper, "-n", "in", "--no-recommends", *package_list], check=True)
+    except subprocess.CalledProcessError as exc:
+        print(f"Failed to install packages {package_list}: {exc}", file=sys.stderr)
+
+
 def record_target_disk(target_path: Path) -> Optional[str]:
     detector = Path("/usr/local/sbin/detect-smallest-disk.sh")
     if not detector.exists():
@@ -257,6 +273,9 @@ def install_to_disk(disk: Optional[str]) -> None:
 def run(config_path: Path) -> None:
     config = read_config(config_path)
     ensure_group("sudo")
+
+    packages = config.get("packages", [])
+    install_packages(packages if isinstance(packages, list) else [])
 
     for user in config.get("users", []):
         if not isinstance(user, dict):
