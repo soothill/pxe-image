@@ -50,7 +50,10 @@ shopt -s nullglob
 KERNEL_SRC=$(ls "$KIWI_IMAGE_ROOT"/boot/vmlinuz* 2>/dev/null | head -n1 || true)
 
 INITRD_SRC=""
-while IFS= read -r candidate; do
+for candidate in "$KIWI_IMAGE_ROOT"/boot/initrd*; do
+  # Glob may not match anything; skip the literal pattern in that case.
+  [[ -e "$candidate" ]] || continue
+
   resolved=$(readlink -f "$candidate" || true)
   if [[ -n "$resolved" && -e "$resolved" ]]; then
     INITRD_SRC="$resolved"
@@ -58,7 +61,7 @@ while IFS= read -r candidate; do
   else
     echo "WARNING: Skipping initrd candidate $candidate (broken link or missing target)" >&2
   fi
-done < <(ls -1t "$KIWI_IMAGE_ROOT"/boot/initrd* 2>/dev/null || true)
+done
 shopt -u nullglob
 
 if [[ -z "$KERNEL_SRC" || -z "$INITRD_SRC" ]]; then
