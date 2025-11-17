@@ -193,6 +193,11 @@ create_vm() {
   # Set PXE (network) as first boot device (BIOS legacy PXE)
   ssh_pve "qm set ${vmid} --boot order=net0"
 
+  # Configure serial console and use it as the primary display for easier logging
+  # - serial0=socket allows attaching via 'qm terminal <vmid>' or over the Proxmox web UI
+  # - vga=serial0 routes the VM console output to the serial device instead of a graphical VGA console
+  ssh_pve "qm set ${vmid} --serial0 socket --vga serial0"
+
   if [[ "${start_after}" == true ]]; then
     echo "Starting VM ${vmid}..." >&2
     ssh_pve "qm start ${vmid}"

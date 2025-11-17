@@ -42,6 +42,8 @@
     <package name="bash"/>
     <package name="dracut"/>
     <package name="dracut-tools"/>
+    <package name="nfs-client"/>
+    <package name="rpcbind"/>
     <package name="dracut-kiwi-oem-repart"/>
   </packages>
 
@@ -63,6 +65,8 @@
     <package name="timezone"/>
     <package name="dracut"/>
     <package name="dracut-tools"/>
+    <package name="nfs-client"/>
+    <package name="rpcbind"/>
     <package name="dracut-kiwi-oem-repart"/>
   </packages>
 
