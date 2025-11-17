@@ -1,0 +1,55 @@
+{
+  "packages": [
+    "vim",
+    "htop",
+    "lldpd"
+  ],
+  "services": {
+    "enable": [
+      "sshd.service"
+    ],
+    "disable": []
+  },
+  "users": [
+    {
+      "username": "deploy",
+      "github_keys": [
+        {
+          "type": "repo",
+          "owner": "octocat",
+          "repo": "keys",
+          "path": "deploy.pub",
+          "ref": "main"
+        }
+      ],
+      "password": "changeme",
+      "gecos": "Deployment User",
+      "shell": "/bin/bash"
+    },
+    {
+      "username": "admin",
+      "github_keys": [
+        {
+          "type": "user",
+          "user": "admin"
+        }
+      ],
+      "password": "$6$saltsalt$examplehashvalue",
+      "password_is_hashed": true,
+      "gecos": "admin",
+      "shell": "/bin/bash"
+    },
+    {
+      "username": "darren",
+      "github_keys": [
+        {
+          "type": "user",
+          "user": "soothill"
+        }
+      ],
+      "password": "$6$0tykdREbE.9rTBV8$7VB8Mj1V1Nt13Lo4n6F.sXVfe63FvJn2q4.MfO.6gDmLEJqMFzNtu9oLxB6I1zD3Lrwf30YNAckJLNtTh3D0b/",
+      "gecos": "darren",
+      "shell": "/bin/bash"
+    }
+  ]
+}

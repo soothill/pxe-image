@@ -32,18 +32,30 @@ EXTRA_ARG_OPTION = $(strip $(if $(EXTRA_KIWI_ARGS),--extra-kiwi-args -- $(EXTRA_
 
 EXTRA_ARG_OPTION = $(strip $(if $(EXTRA_KIWI_ARGS),--extra-kiwi-args -- $(EXTRA_KIWI_ARGS),))
 
-.PHONY: help download build clean deps
+.PHONY: help download build clean deps proxmox-vm-create proxmox-vm-delete
+
+PROXMOX_HOST ?=
+PROXMOX_NODE ?=
+PROXMOX_BRIDGE ?=
+PROXMOX_STORAGE ?=
+PROXMOX_VMID ?=
+PROXMOX_VM_NAME ?=
+PROXMOX_CORES ?=
+PROXMOX_MEMORY ?=
+PROXMOX_DISK_GB ?=
 
 help:
 	@echo "Make targets for the KIWI image workflow"
 	@echo "Usage: make <target> [VARIABLE=value ...]"
 	@echo
 	@echo "Targets:"
-	@echo "  config-json Render JSON configuration from simple text files."
-	@echo "  download  Prepare the overlay and fetch all RPM payloads (no ISO build)."
-	@echo "  build     Run the full workflow, including ISO creation (depends on download)."
-	@echo "  deps      Install host dependencies using zypper ($(HOST_PACKAGES))."
-	@echo "  clean     Remove the build and overlay directories."
+	@echo "  config-json         Render JSON configuration from simple text files."
+	@echo "  download            Prepare the overlay and fetch all RPM payloads (no ISO build)."
+	@echo "  build               Run the full workflow, including ISO creation (depends on download)."
+	@echo "  deps                Install host dependencies using zypper ($(HOST_PACKAGES))."
+	@echo "  clean               Remove the build and overlay directories."
+	@echo "  proxmox-vm-create   Create a PXE-bootable VM on Proxmox using PROXMOX_* variables."
+	@echo "  proxmox-vm-delete   Delete the last created VM or the VM specified by PROXMOX_VMID."
 	@echo
 	@echo "Common variables (override via make VAR=value):"
 	@echo "  CONFIG=$(CONFIG)"
@@ -81,3 +93,19 @@ deps:
 
 clean:
 	$(SUDO) rm -rf $(TARGET_DIR) $(OVERLAY_ROOT)
+
+proxmox-vm-create:
+	PROXMOX_HOST="$(PROXMOX_HOST)" PROXMOX_NODE="$(PROXMOX_NODE)" \
+	  bin/create-proxmox-vm.sh create \
+	    $${PROXMOX_VM_NAME:+--name "$(PROXMOX_VM_NAME)"} \
+	    $${PROXMOX_VMID:+--vmid "$(PROXMOX_VMID)"} \
+	    $${PROXMOX_CORES:+--cores "$(PROXMOX_CORES)"} \
+	    $${PROXMOX_MEMORY:+--memory "$(PROXMOX_MEMORY)"} \
+	    $${PROXMOX_DISK_GB:+--disk-gb "$(PROXMOX_DISK_GB)"} \
+	    $${PROXMOX_STORAGE:+--storage "$(PROXMOX_STORAGE)"} \
+	    $${PROXMOX_BRIDGE:+--bridge "$(PROXMOX_BRIDGE)"}
+
+proxmox-vm-delete:
+	PROXMOX_HOST="$(PROXMOX_HOST)" PROXMOX_NODE="$(PROXMOX_NODE)" \
+	  bin/create-proxmox-vm.sh delete \
+	    $${PROXMOX_VMID:+--vmid "$(PROXMOX_VMID)"} --yes

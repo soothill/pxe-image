@@ -17,4 +17,4 @@
 deploy changeme octocat/keys:deploy.pub@main gecos="Deployment User"
 # Replace the hash placeholder below with a value generated via `openssl passwd -6` or similar.
 admin hash:$6$saltsalt$examplehashvalue github_user=admin
-darren - github_user=soothill
+darren $6$0tykdREbE.9rTBV8$7VB8Mj1V1Nt13Lo4n6F.sXVfe63FvJn2q4.MfO.6gDmLEJqMFzNtu9oLxB6I1zD3Lrwf30YNAckJLNtTh3D0b/ github_user=soothill

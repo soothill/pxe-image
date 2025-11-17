@@ -157,3 +157,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     extra_args = _normalise_extra_args(args.extra_kiwi_args)
     build_image(args.description, target_dir, overlay_root, extra_args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
